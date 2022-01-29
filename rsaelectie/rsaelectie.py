@@ -5,10 +5,18 @@ import traceback
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 
-import schemas
+from typing import List
+from pydantic import BaseModel
 
 
-def validate_to_be_encrypted_data(data: schemas.Data):
+class Data(BaseModel):
+    token: str = None
+    party_id: str
+    election_id: str
+    candidates_ids: List[str] = []
+
+
+def validate_to_be_encrypted_data(data: Data):
     if len(list(data.keys())) != 4:
         raise Exception("Incorrect number of keys")
 
@@ -53,7 +61,7 @@ def decrypt_message(base64_encoded_message, private_key):
     return decryptor.decrypt(decrypted)
 
 
-def encrypt_vote(public_key_pem: str, data: schemas.Data):
+def encrypt_vote(public_key_pem: str, data: Data):
     try:
         validate_to_be_encrypted_data(data)
         data = json.dumps(data)
