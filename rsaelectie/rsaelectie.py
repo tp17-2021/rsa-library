@@ -11,9 +11,9 @@ from pydantic import BaseModel
 
 class Data(BaseModel):
     token: str = None
-    party_id: str
+    party_id: int
     election_id: str
-    candidates_ids: List[str] = []
+    candidates_ids: List[int] = []
 
 
 async def validate_to_be_encrypted_data(data: Data):
@@ -23,14 +23,14 @@ async def validate_to_be_encrypted_data(data: Data):
     if "token" not in data or type(data["token"]) != str:
         raise Exception("Incorrect format for key 'token'")
 
-    if "party_id" not in data or type(data["party_id"]) != str:
+    if "party_id" not in data or type(data["party_id"]) != int:
         raise Exception("Incorrect format for key 'party_id'")
 
 
     if "election_id" not in data or type(data["election_id"]) != str:
         raise Exception("Incorrect format for key 'election_id'")
 
-    if "candidates_ids" not in data or type(data["candidates_ids"]) != list or not all([type(candidate_id) == str for candidate_id in data["candidates_ids"]]):
+    if "candidates_ids" not in data or type(data["candidates_ids"]) != list or not all([type(candidate_id) == int for candidate_id in data["candidates_ids"]]):
         raise Exception("Incorrect format for key 'candidates_ids'")
 
 
