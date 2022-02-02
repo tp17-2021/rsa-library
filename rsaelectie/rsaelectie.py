@@ -39,7 +39,7 @@ async def validate_to_be_decrypted_data(data: str):
         raise Exception("Incorrect type for parameter 'data'")
 
 
-def get_rsa_key_pair():
+async def get_rsa_key_pair():
     """
     OAEP padding algorithm
     """
@@ -96,7 +96,3 @@ async def decrypt_vote(private_key_pem: str, data: str):
             traceback.print_exc()
     except:
         traceback.print_exc()
-
-# private_key_pem, public_key_pem = get_rsa_key_pair(8192)
-# print(private_key_pem.decode("utf-8"))
-# print(public_key_pem.decode("utf-8"))
