@@ -97,6 +97,6 @@ async def decrypt_vote(private_key_pem: str, data: str):
     except:
         traceback.print_exc()
 
-private_key_pem, public_key_pem = get_rsa_key_pair(8192)
-print(private_key_pem.decode("utf-8"))
-print(public_key_pem.decode("utf-8"))
+# private_key_pem, public_key_pem = get_rsa_key_pair(8192)
+# print(private_key_pem.decode("utf-8"))
+# print(public_key_pem.decode("utf-8"))
