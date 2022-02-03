@@ -8,7 +8,7 @@ from Crypto.Cipher import PKCS1_OAEP
 from typing import List
 from pydantic import BaseModel
 
-
+# election_id = "election_id"
 class Data(BaseModel):
     token: str = None
     party_id: int
