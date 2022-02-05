@@ -30,7 +30,8 @@ async def validate_to_be_encrypted_data(data: Data):
     if "election_id" not in data or type(data["election_id"]) != str:
         raise Exception("Incorrect format for key 'election_id'")
 
-    if "candidates_ids" not in data or type(data["candidates_ids"]) != list or not all([type(candidate_id) == int for candidate_id in data["candidates_ids"]]):
+    if "candidates_ids" not in data or type(data["candidates_ids"]) != list or \
+            not all([type(candidate_id) == int for candidate_id in data["candidates_ids"]]):
         raise Exception("Incorrect format for key 'candidates_ids'")
 
 
