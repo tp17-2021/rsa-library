@@ -1,6 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
+    setup_requires=['wheel'],
     name="rsaelectie",
     packages=find_packages(include=["rsaelectie"]),
     version="0.1",
