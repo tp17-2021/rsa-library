@@ -77,9 +77,6 @@ async def encrypt_vote(public_key_pem: str, data: Data):
     try:
         await validate_to_be_encrypted_data(data)
         data = json.dumps(data)
-        print(data)
-        print(type(data))
-        print(len(data))
         try: 
             public_key_pem = public_key_pem.encode("utf-8")
             public_key = RSA.import_key(public_key_pem)
@@ -96,9 +93,6 @@ async def encrypt_vote(public_key_pem: str, data: Data):
 async def decrypt_vote(private_key_pem: str, data: str):
     try:
         await validate_to_be_decrypted_data(data)
-        print(data)
-        print(type(data))
-        print(len(data))
         try: 
             private_key_pem = private_key_pem.encode("utf-8")
             private_key = RSA.import_key(private_key_pem)
