@@ -1,12 +1,12 @@
 from setuptools import find_packages, setup
 
 setup(
-    setup_requires=['wheel'],
     name="rsaelectie",
-    packages=find_packages(include=["rsaelectie"]),
-    version="0.1",
-    description="RSA library for project called Electie",
+    version="0.0.1",
+    description="Adapted RSA library for university project called Electie",
     author="tim172021@googlegroups.com",
     license="MIT",
-    install_requires=["pycryptodome", "pydantic"]
+    packages=["rsaelectie"],
+    setup_requires=['wheel'],
+    install_requires=["pycryptodome", "pydantic"],
 )

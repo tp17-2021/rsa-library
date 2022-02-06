@@ -8,7 +8,9 @@ from Crypto.Cipher import PKCS1_OAEP
 from typing import List
 from pydantic import BaseModel
 
-# election_id = "election_id"
+KEY_LENGTH = 8192
+
+# for this phase election_id = "election_id"
 class Data(BaseModel):
     token: str = None
     party_id: int
@@ -44,7 +46,7 @@ async def get_rsa_key_pair():
     """
     OAEP padding algorithm
     """
-    private_key = RSA.generate(8192)
+    private_key = RSA.generate(KEY_LENGTH)
     public_key = private_key.publickey()
 
     private_key_pem = private_key.exportKey()
