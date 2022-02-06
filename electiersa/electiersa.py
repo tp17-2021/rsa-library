@@ -5,10 +5,16 @@ import traceback
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 
+# RSA
+# data = around 150 bytes
+
+# 2048 bits = 256 bytes -> 214 bytes is ok (42 padding) cca 70% utilized
+# 4096 bits = 512 bytes -> 470 bytes is ok (42 padding) cca 32% utilized
+
 from typing import List
 from pydantic import BaseModel
 
-KEY_LENGTH = 8192
+KEY_LENGTH = 4096
 
 # for this phase election_id = "election_id"
 class Data(BaseModel):
@@ -71,6 +77,9 @@ async def encrypt_vote(public_key_pem: str, data: Data):
     try:
         await validate_to_be_encrypted_data(data)
         data = json.dumps(data)
+        print(data)
+        print(type(data))
+        print(len(data))
         try: 
             public_key_pem = public_key_pem.encode("utf-8")
             public_key = RSA.import_key(public_key_pem)
@@ -87,6 +96,9 @@ async def encrypt_vote(public_key_pem: str, data: Data):
 async def decrypt_vote(private_key_pem: str, data: str):
     try:
         await validate_to_be_decrypted_data(data)
+        print(data)
+        print(type(data))
+        print(len(data))
         try: 
             private_key_pem = private_key_pem.encode("utf-8")
             private_key = RSA.import_key(private_key_pem)
@@ -99,3 +111,39 @@ async def decrypt_vote(private_key_pem: str, data: str):
             traceback.print_exc()
     except:
         traceback.print_exc()
+
+
+# async def tmp():
+#     private_key_pem, public_key_pem = await get_rsa_key_pair()
+#     print(private_key_pem)
+#     print(public_key_pem)
+
+#     private_key_pem = private_key_pem.decode("utf-8")
+#     public_key_pem = public_key_pem.decode("utf-8")
+
+
+#     data = {
+#         "token": "A"*64,
+#         "election_id": "election_id",
+#         "party_id": 10000,
+#         "candidates_ids": [
+#             10000,
+#             10000,
+#             10000,
+#             10000,
+#             10000
+#         ]
+#     }
+
+#     print(data)
+
+#     data_e = encrypt_vote(public_key_pem, data)
+#     print(data_e)
+
+#     print("---")
+#     data_d = decrypt_vote(private_key_pem, data_e)
+#     print(data_d)
+
+
+# import asyncio
+# asyncio.run(tmp())
