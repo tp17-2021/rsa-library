@@ -141,7 +141,6 @@ async def encrypt_vote(vote: Vote, g_rsa_private_key_pem: str, rsa_public_key_pe
         traceback.print_exc()
 
 
-
 async def decrypt_vote(encrypted_object: str, rsa_private_key_pem: str, encrypted_message: str, g_rsa_public_key_pem: str):
     try:
         # convert string to bytes
