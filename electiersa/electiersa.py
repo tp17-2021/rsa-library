@@ -68,13 +68,6 @@ async def get_rsa_key_pair():
     return private_key_pem, public_key_pem
 
 
-async def get_aes_key():
-    global AES_KEY_LENGTH
-    aes_key = get_random_bytes(AES_KEY_LENGTH)
-    aes_key = await from_bytes_to_string(aes_key)
-    return aes_key
-
-
 async def encrypt_vote(vote: Vote, g_rsa_private_key_pem: str, rsa_public_key_pem: str):
     try:
         await validate_vote(vote)
@@ -136,13 +129,21 @@ async def encrypt_vote(vote: Vote, g_rsa_private_key_pem: str, rsa_public_key_pe
         # convert bytes to string
         encrypted_object = await from_bytes_to_string(encrypted_object)
 
-        return encrypted_message, encrypted_object
+        encrypted_vote = {
+            "encrypted_message": encrypted_message,
+            "encrypted_object": encrypted_object
+        }
+        return encrypted_vote
     except:
         traceback.print_exc()
 
 
-async def decrypt_vote(encrypted_object: str, rsa_private_key_pem: str, encrypted_message: str, g_rsa_public_key_pem: str):
+async def decrypt_vote(encrypted_vote: dict, rsa_private_key_pem: str, g_rsa_public_key_pem: str):
     try:
+        # extract encrypted_object, encrypted_message from encrypted_vote
+        encrypted_object = encrypted_vote["encrypted_object"]
+        encrypted_message = encrypted_vote["encrypted_message"]
+
         # convert string to bytes
         encrypted_object = await from_string_to_bytes(encrypted_object)
 
@@ -213,10 +214,10 @@ async def example():
         ]
     }
 
-    encrypted_vote, encrypted_object = await encrypt_vote(vote, g_rsa_private_key_pem, rsa_public_key_pem)
+    encrypted_vote = await encrypt_vote(vote, g_rsa_private_key_pem, rsa_public_key_pem)
 
     # SERVER
-    vote = await decrypt_vote(encrypted_object, rsa_private_key_pem, encrypted_vote, g_rsa_public_key_pem)
+    vote = await decrypt_vote(encrypted_vote, rsa_private_key_pem, g_rsa_public_key_pem)
     print(vote)
 
 # asyncio.run(example())
