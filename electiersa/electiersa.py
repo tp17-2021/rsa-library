@@ -1,17 +1,18 @@
 import json
 import base64
-import traceback
-
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
-
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
-
 import asyncio
+import traceback
 
 from typing import List
 from pydantic import BaseModel
+
+from Crypto.Cipher import AES
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Random import get_random_bytes
+from Crypto.Signature.pkcs1_15 import PKCS115_SigScheme
+
 
 KEY_LENGTH = 2048
 AES_KEY_LENGTH = 32
@@ -43,13 +44,9 @@ async def validate_vote(vote: Vote):
         raise Exception("Incorrect format for key 'candidates_ids'")
 
 
-async def validate_encrypted_vote(vote: str):
-    if type(vote) != str:
-        raise Exception("Incorrect type for parameter 'data'")
-
-
 async def from_bytes_to_string(encrypted_bytes):
     return base64.b64encode(encrypted_bytes).decode("utf-8")
+
 
 async def from_string_to_bytes(string):
     return base64.b64decode(string.encode("utf-8"))
@@ -74,83 +71,126 @@ async def get_rsa_key_pair():
 async def get_aes_key():
     global AES_KEY_LENGTH
     aes_key = get_random_bytes(AES_KEY_LENGTH)
-    aes_key = await from_bytes_to_string(aes_key)   
+    aes_key = await from_bytes_to_string(aes_key)
     return aes_key
 
 
-async def encrypt_message_with_aes_key(message: str, aes_key: str):
-    message = message.encode("utf-8")
-
-    aes_key = await from_string_to_bytes(aes_key)
-    aes_encryptor = AES.new(aes_key, AES.MODE_EAX)
-
-    encrypted_message, tag = aes_encryptor.encrypt_and_digest(message)
-    encrypted_message = await from_bytes_to_string(encrypted_message)
-    tag = await from_bytes_to_string(tag)
-    nonce = await from_bytes_to_string(aes_encryptor.nonce)
-
-    return encrypted_message, tag, nonce
-
-
-async def encrypt_aes_key_with_rsa_pub_key(aes_key: str, rsa_public_key_pem: str):
-    aes_key = await from_string_to_bytes(aes_key)
-
-    rsa_public_key_pem = rsa_public_key_pem.encode("utf-8")
-    rsa_public_key = RSA.import_key(rsa_public_key_pem)
-    rsa_encryptor = PKCS1_OAEP.new(rsa_public_key)
-
-    encrypted_aes_key = rsa_encryptor.encrypt(aes_key)
-    encrypted_aes_key = await from_bytes_to_string(encrypted_aes_key)
-    
-    return encrypted_aes_key
-
-
-async def decrypt_aes_key_with_rsa_priv_key(encrypted_aes_key: str, rsa_private_key_pem: str):
-    encrypted_aes_key = await from_string_to_bytes(encrypted_aes_key)
-
-    rsa_private_key_pem = rsa_private_key_pem.encode("utf-8")
-    rsa_private_key = RSA.import_key(rsa_private_key_pem)
-    rsa_decryptor = PKCS1_OAEP.new(rsa_private_key)
-
-    decrypted_aes_key = rsa_decryptor.decrypt(encrypted_aes_key)
-    decrypted_aes_key = await from_bytes_to_string(decrypted_aes_key)
-
-    return decrypted_aes_key
-
-
-async def decrypt_message_with_aes_key(encrypted_message: str, tag: str, nonce: str, aes_key: str):
-    encrypted_message = await from_string_to_bytes(encrypted_message)
-    tag = await from_string_to_bytes(tag)
-    nonce = await from_string_to_bytes(nonce)
-    aes_key = await from_string_to_bytes(aes_key)
-
-    aes_decryptor = AES.new(aes_key, AES.MODE_EAX, nonce)
-    decrypted_message = aes_decryptor.decrypt_and_verify(encrypted_message, tag)
-    decrypted_message = decrypted_message.decode("utf-8")
-
-    return decrypted_message
-
-
-async def encrypt_vote(vote: Vote, aes_key: str, rsa_public_key_pem: str):
-    try: 
+async def encrypt_vote(vote: Vote, g_rsa_private_key_pem: str, rsa_public_key_pem: str):
+    try:
         await validate_vote(vote)
-        message = json.dumps(vote)
+        
+        # convert dict to bytes
+        message = json.dumps(vote).encode("utf-8")
 
-        encrypted_message, tag, nonce = await encrypt_message_with_aes_key(message, aes_key)
-        encrypted_aes_key = await encrypt_aes_key_with_rsa_pub_key(aes_key, rsa_public_key_pem)
-        return encrypted_message, tag, nonce, encrypted_aes_key
+        # import g_rsa_private_key
+        g_rsa_private_key_pem = g_rsa_private_key_pem.encode("utf-8")
+        g_rsa_private_key = RSA.import_key(g_rsa_private_key_pem)
+
+        # create signature from message
+        hash = SHA256.new(message)
+        signer = PKCS115_SigScheme(g_rsa_private_key)
+        signature = signer.sign(hash)
+        
+        # convert bytes to string
+        signature = await from_bytes_to_string(signature)
+
+        # create dict from vote and signature
+        message = {
+            "vote": vote,
+            "signature": signature,
+        }
+
+        # convert dict to bytes
+        message = json.dumps(message).encode("utf-8")
+
+        # encrypt message with aes key
+        aes_key = get_random_bytes(AES_KEY_LENGTH)
+        aes_encryptor = AES.new(aes_key, AES.MODE_EAX)
+        encrypted_message, tag = aes_encryptor.encrypt_and_digest(message)
+        nonce = aes_encryptor.nonce
+
+        # convert bytes to to string
+        encrypted_message = await from_bytes_to_string(encrypted_message)
+        aes_key = await from_bytes_to_string(aes_key)
+        tag = await from_bytes_to_string(tag)
+        nonce = await from_bytes_to_string(nonce)
+
+        # create dict from aes_key, tag and nonce
+        object = {
+            "aes_key": aes_key,
+            "tag": tag,
+            "nonce": nonce
+        }
+
+        # convert dict to bytes
+        object = json.dumps(object).encode("utf-8")
+
+        # import rsa_public_key
+        rsa_public_key_pem = rsa_public_key_pem.encode("utf-8")
+        rsa_public_key = RSA.import_key(rsa_public_key_pem)
+
+        # encrypt object with rsa_public_key
+        rsa_encryptor = PKCS1_OAEP.new(rsa_public_key)
+        encrypted_object = rsa_encryptor.encrypt(object)
+
+        # convert bytes to string
+        encrypted_object = await from_bytes_to_string(encrypted_object)
+
+        return encrypted_message, encrypted_object
     except:
         traceback.print_exc()
 
 
-async def decrypt_vote(encrypted_vote: str, tag: str, nonce: str, encrypted_aes_key: str, rsa_private_key_pem: str):
-    try:
-        await validate_encrypted_vote(encrypted_vote)
 
-        decrypted_aes_key = await decrypt_aes_key_with_rsa_priv_key(encrypted_aes_key, rsa_private_key_pem)
-        decrypted_message = await decrypt_message_with_aes_key(encrypted_vote, tag, nonce, decrypted_aes_key)
+async def decrypt_vote(encrypted_object: str, rsa_private_key_pem: str, encrypted_message: str, g_rsa_public_key_pem: str):
+    try:
+        # convert string to bytes
+        encrypted_object = await from_string_to_bytes(encrypted_object)
+
+        # import rsa_private_key
+        rsa_private_key_pem = rsa_private_key_pem.encode("utf-8")
+        rsa_private_key = RSA.import_key(rsa_private_key_pem)
+
+        # decrypt object with rsa_private_key
+        rsa_decryptor = PKCS1_OAEP.new(rsa_private_key)
+        decrypted_object = rsa_decryptor.decrypt(encrypted_object)
+
+        # convert bytes to dict
+        decrypted_object = json.loads(decrypted_object.decode("utf-8"))
+
+        # extract tag, nonce, aes_key and convert them to bytes
+        tag = await from_string_to_bytes(decrypted_object["tag"])
+        nonce = await from_string_to_bytes(decrypted_object["nonce"])
+        aes_key = await from_string_to_bytes(decrypted_object["aes_key"])
+
+        # convert string to bytes
+        encrypted_message = await from_string_to_bytes(encrypted_message)
+
+        # decrypt message with eas_key
+        aes_decryptor = AES.new(aes_key, AES.MODE_EAX, nonce)
+        decrypted_message = aes_decryptor.decrypt_and_verify(encrypted_message, tag)
+
+        # convert bytes to dict
+        decrypted_message = json.loads(decrypted_message.decode("utf-8"))
+
+        # extract vote, signature from dict
+        vote = decrypted_message["vote"]
+        signature = decrypted_message["signature"]
+
+        # convert dict to bytes
+        message = json.dumps(vote).encode("utf-8")
         
-        vote = json.loads(decrypted_message)
+        # convert string to bytes
+        signature = await from_string_to_bytes(signature)
+
+        # import g_rsa_public_key
+        g_rsa_public_key_pem = g_rsa_public_key_pem.encode("utf-8")
+        g_rsa_public_key = RSA.import_key(g_rsa_public_key_pem)
+
+        hash = SHA256.new(message)
+        verifier = PKCS115_SigScheme(g_rsa_public_key)
+        verifier.verify(hash, signature)
+
         return vote
     except:
         traceback.print_exc()
@@ -158,6 +198,9 @@ async def decrypt_vote(encrypted_vote: str, tag: str, nonce: str, encrypted_aes_
 
 async def example():
     # CLIENT
+    rsa_private_key_pem, rsa_public_key_pem = await get_rsa_key_pair()
+    g_rsa_private_key_pem, g_rsa_public_key_pem = await get_rsa_key_pair()
+
     vote = {
         "token": "A"*64,
         "election_id": "election_id",
@@ -171,29 +214,16 @@ async def example():
         ]
     }
 
-    aes_key = await get_aes_key()
-    rsa_private_key_pem, rsa_public_key_pem = await get_rsa_key_pair()
-    encrypted_vote, tag, nonce, encrypted_aes_key = await encrypt_vote(vote, aes_key, rsa_public_key_pem)
+    encrypted_vote, encrypted_object = await encrypt_vote(vote, g_rsa_private_key_pem, rsa_public_key_pem)
 
     # SERVER
-    decrypted_vote = await decrypt_vote(encrypted_vote, tag, nonce, encrypted_aes_key, rsa_private_key_pem)
-    print(decrypted_vote)
+    vote = await decrypt_vote(encrypted_object, rsa_private_key_pem, encrypted_vote, g_rsa_public_key_pem)
+    print(vote)
 
-asyncio.run(example())
+# asyncio.run(example())
 
 
-# CLIENT
-# vote
-# aes key
-# rsa public key
-
-# SERVER
-# rsa private key
-
+# USEFUL LINKS
 # https://wizardforcel.gitbooks.io/practical-cryptography-for-developers-book/content/asymmetric-key-ciphers/ecc-encryption-decryption.html
 # https://www.youtube.com/watch?v=p3jraFbfnHw&ab_channel=MisterArk
-
-# RSA
-# data = around 150 bytes
-# 2048 bits = 256 bytes -> 214 bytes is ok (42 padding) cca 70% utilized
-# 4096 bits = 512 bytes -> 470 bytes is ok (42 padding) cca 32% utilized
+# https://cryptobook.nakov.com/digital-signatures/rsa-sign-verify-examples
