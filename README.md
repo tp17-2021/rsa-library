@@ -1,9 +1,16 @@
-# RSA library
-Custom RSA library used for data encryption. 
+# RSA Electie library
+Adapted RSA library for university project called Electie.
+
+Library is uploaded to PyPI on this [link](https://pypi.org/project/electiersa/).
 
 ## How to install library
-Using `python3 setup.py bdist_wheel` python will create wheel file stored in "dist" directory. After that you can install library by using:
-`pip install dist/rsaelectie-0.1-py3-none-any.whl`
+`pip install electiersa`
 
-Once you have installed your library, you can import it using:
-`import rsaelectie` or `from rsaelectie import rsaelectie`
+## How to use library in project
+`import electiersa` or `from electiersa import electiersa`
+
+## Steps to update library
+1. Delete all files in the `dist` folder
+2. Update the version number in the `setup.py` file`
+3. Re-create the wheels with `python3 setup.py sdist`
+4. Re-upload the new files with with `twine upload dist/*`
