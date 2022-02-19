@@ -17,32 +17,6 @@ from Crypto.Signature.pkcs1_15 import PKCS115_SigScheme
 KEY_LENGTH = 2048
 AES_KEY_LENGTH = 32
 
-# for this phase election_id = "election_id"
-class Vote(BaseModel):
-    token: str = None
-    party_id: int
-    election_id: str
-    candidates_ids: List[int] = []
-
-
-async def validate_vote(vote: Vote):
-    if len(list(vote.keys())) != 4:
-        raise Exception("Incorrect number of keys")
-
-    if "token" not in vote or type(vote["token"]) != str:
-        raise Exception("Incorrect format for key 'token'")
-
-    if "party_id" not in vote or type(vote["party_id"]) != int:
-        raise Exception("Incorrect format for key 'party_id'")
-
-
-    if "election_id" not in vote or type(vote["election_id"]) != str:
-        raise Exception("Incorrect format for key 'election_id'")
-
-    if "candidates_ids" not in vote or type(vote["candidates_ids"]) != list or \
-            not all([type(candidate_id) == int for candidate_id in vote["candidates_ids"]]):
-        raise Exception("Incorrect format for key 'candidates_ids'")
-
 
 async def from_bytes_to_string(encrypted_bytes):
     return base64.b64encode(encrypted_bytes).decode("utf-8")
@@ -68,10 +42,8 @@ async def get_rsa_key_pair():
     return private_key_pem, public_key_pem
 
 
-async def encrypt_vote(vote: Vote, g_rsa_private_key_pem: str, rsa_public_key_pem: str):
+async def encrypt_vote(vote: object, g_rsa_private_key_pem: str, rsa_public_key_pem: str):
     try:
-        await validate_vote(vote)
-        
         # convert dict to bytes
         message = json.dumps(vote).encode("utf-8")
 
