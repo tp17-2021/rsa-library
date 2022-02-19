@@ -230,36 +230,3 @@ async def decrypt_vote(
     verifier.verify(hash, signature)
 
     return vote
-
-
-async def example():
-    # CLIENT
-    rsa_private_key_pem, rsa_public_key_pem = await get_rsa_key_pair()
-    g_rsa_private_key_pem, g_rsa_public_key_pem = await get_rsa_key_pair()
-
-    vote = {
-        "token": "A"*64,
-        "election_id": "election_id",
-        "party_id": 10000,
-        "candidates_ids": [
-            10000,
-            10000,
-            10000,
-            10000,
-            10000
-        ]
-    }
-
-    encrypted_vote = await encrypt_vote(vote, g_rsa_private_key_pem, rsa_public_key_pem)
-
-    # SERVER
-    vote = await decrypt_vote(encrypted_vote, rsa_private_key_pem, g_rsa_public_key_pem)
-    print(vote)
-
-# asyncio.run(example())
-
-
-# USEFUL LINKS
-# https://wizardforcel.gitbooks.io/practical-cryptography-for-developers-book/content/asymmetric-key-ciphers/ecc-encryption-decryption.html
-# https://www.youtube.com/watch?v=p3jraFbfnHw&ab_channel=MisterArk
-# https://cryptobook.nakov.com/digital-signatures/rsa-sign-verify-examples
