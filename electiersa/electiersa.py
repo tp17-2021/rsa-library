@@ -18,11 +18,11 @@ KEY_LENGTH = 2048
 AES_KEY_LENGTH = 32
 
 
-async def from_bytes_to_string(encrypted_bytes):
+async def _from_bytes_to_string(encrypted_bytes):
     return base64.b64encode(encrypted_bytes).decode("utf-8")
 
 
-async def from_string_to_bytes(string):
+async def _from_string_to_bytes(string):
     return base64.b64decode(string.encode("utf-8"))
      
 
@@ -57,7 +57,7 @@ async def encrypt_vote(vote: object, g_rsa_private_key_pem: str, rsa_public_key_
         signature = signer.sign(hash)
         
         # convert bytes to string
-        signature = await from_bytes_to_string(signature)
+        signature = await _from_bytes_to_string(signature)
 
         # create dict from vote and signature
         message = {
@@ -75,10 +75,10 @@ async def encrypt_vote(vote: object, g_rsa_private_key_pem: str, rsa_public_key_
         nonce = aes_encryptor.nonce
 
         # convert bytes to to string
-        encrypted_message = await from_bytes_to_string(encrypted_message)
-        aes_key = await from_bytes_to_string(aes_key)
-        tag = await from_bytes_to_string(tag)
-        nonce = await from_bytes_to_string(nonce)
+        encrypted_message = await _from_bytes_to_string(encrypted_message)
+        aes_key = await _from_bytes_to_string(aes_key)
+        tag = await _from_bytes_to_string(tag)
+        nonce = await _from_bytes_to_string(nonce)
 
         # create dict from aes_key, tag and nonce
         object = {
@@ -99,7 +99,7 @@ async def encrypt_vote(vote: object, g_rsa_private_key_pem: str, rsa_public_key_
         encrypted_object = rsa_encryptor.encrypt(object)
 
         # convert bytes to string
-        encrypted_object = await from_bytes_to_string(encrypted_object)
+        encrypted_object = await _from_bytes_to_string(encrypted_object)
 
         encrypted_vote = {
             "encrypted_message": encrypted_message,
@@ -117,7 +117,7 @@ async def decrypt_vote(encrypted_vote: dict, rsa_private_key_pem: str, g_rsa_pub
         encrypted_message = encrypted_vote["encrypted_message"]
 
         # convert string to bytes
-        encrypted_object = await from_string_to_bytes(encrypted_object)
+        encrypted_object = await _from_string_to_bytes(encrypted_object)
 
         # import rsa_private_key
         rsa_private_key_pem = rsa_private_key_pem.encode("utf-8")
@@ -131,12 +131,12 @@ async def decrypt_vote(encrypted_vote: dict, rsa_private_key_pem: str, g_rsa_pub
         decrypted_object = json.loads(decrypted_object.decode("utf-8"))
 
         # extract tag, nonce, aes_key and convert them to bytes
-        tag = await from_string_to_bytes(decrypted_object["tag"])
-        nonce = await from_string_to_bytes(decrypted_object["nonce"])
-        aes_key = await from_string_to_bytes(decrypted_object["aes_key"])
+        tag = await _from_string_to_bytes(decrypted_object["tag"])
+        nonce = await _from_string_to_bytes(decrypted_object["nonce"])
+        aes_key = await _from_string_to_bytes(decrypted_object["aes_key"])
 
         # convert string to bytes
-        encrypted_message = await from_string_to_bytes(encrypted_message)
+        encrypted_message = await _from_string_to_bytes(encrypted_message)
 
         # decrypt message with eas_key
         aes_decryptor = AES.new(aes_key, AES.MODE_EAX, nonce)
@@ -153,7 +153,7 @@ async def decrypt_vote(encrypted_vote: dict, rsa_private_key_pem: str, g_rsa_pub
         message = json.dumps(vote).encode("utf-8")
         
         # convert string to bytes
-        signature = await from_string_to_bytes(signature)
+        signature = await _from_string_to_bytes(signature)
 
         # import g_rsa_public_key
         g_rsa_public_key_pem = g_rsa_public_key_pem.encode("utf-8")
