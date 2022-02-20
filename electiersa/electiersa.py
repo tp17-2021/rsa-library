@@ -75,9 +75,9 @@ def encrypt_vote(
     vote : dict
         json.dumps serializable object to be signed and encrypted.
     g_rsa_private_key_pem : str
-        RSA Private key of the sender used to encrypt generated AES key.
+        RSA Private key of the sender used to create signature.
     rsa_public_key_pem : str
-        RSA Public key of the receiver used to create signature.
+        RSA Public key of the receiver used to encrypt generated AES key.
 
     Keyword Arguments
     -----------------
@@ -168,7 +168,7 @@ def decrypt_vote(
     rsa_private_key_pem : str
         RSA Private key of the recevier to decrypt generated AES key.
     g_rsa_public_key_pem : str
-        RSA Public key of the sender to chack signature.
+        RSA Public key of the sender to check signature.
 
     Returns
     -------
